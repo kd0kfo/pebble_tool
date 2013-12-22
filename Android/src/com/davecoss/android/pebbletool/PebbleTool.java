@@ -148,7 +148,7 @@ public class PebbleTool extends Activity {
         // Build up a Pebble dictionary containing the weather icon and the current temperature in degrees celsius
         PebbleDictionary data = new PebbleDictionary();
         data.addUint8(ICON_KEY, (byte) weatherIconId);
-        data.addString(TEMP_KEY, String.format("%d\u00B0C", temperatureCelsius));
+        data.addString(TEMP_KEY, String.format("%d\u00B0F", temperatureCelsius));
 
         // Send the assembled dictionary to the weather watch-app; this is a no-op if the app isn't running or is not
         // installed

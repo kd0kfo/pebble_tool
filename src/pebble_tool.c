@@ -135,7 +135,7 @@ static void tool_app_init(AppContextRef c) {
 
   Tuplet initial_values[] = {
     TupletInteger(WEATHER_ICON_KEY, (uint8_t) 1),
-    TupletCString(WEATHER_TEMPERATURE_KEY, "1234\u00B0C"),
+    TupletCString(WEATHER_TEMPERATURE_KEY, "???\u00B0F"),
   };
   app_sync_init(&s_data.sync, s_data.sync_buffer, sizeof(s_data.sync_buffer), initial_values, ARRAY_LENGTH(initial_values),
                 sync_tuple_changed_callback, sync_error_callback, NULL);
