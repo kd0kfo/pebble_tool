@@ -139,7 +139,7 @@ static void tool_app_init(AppContextRef c) {
   };
   app_sync_init(&s_data.sync, s_data.sync_buffer, sizeof(s_data.sync_buffer), initial_values, ARRAY_LENGTH(initial_values),
                 sync_tuple_changed_callback, sync_error_callback, NULL);
-
+  send_cmd(CMD_GET_WEATHER);
   window_set_click_config_provider(window, (ClickConfigProvider) click_config_provider);
 
   window_stack_push(window, true);
