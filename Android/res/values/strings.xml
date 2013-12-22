@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">PebbleTool</string>
+    <string name="action_settings">Settings</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="msg_to_pebble">Message to Pebble</string>
+    <string name="send_to_pebble">Send</string>
+    <string name="weather">Weather</string>
+
+</resources>
