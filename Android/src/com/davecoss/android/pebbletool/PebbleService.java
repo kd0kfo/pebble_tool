@@ -74,17 +74,7 @@ public class PebbleService extends Service {
     	
     	Commands cmd = Commands.values()[idx];
     	
-    	switch(cmd) {
-    	case SEND_WEATHER_DATA:
-    		doWeatherUpdate();
-    		break;
-    	case SEND_ALERT:
-    		String msg = intent.getStringExtra(COMMAND_ARG_TYPE);
-    		if(msg == null)
-    			break;
-    		sendAlertToPebble(msg);
-    		break;
-    	}
+    	runCommand(cmd, intent.getStringExtra(COMMAND_ARG_TYPE));
     	
         return START_STICKY;
     }
@@ -105,9 +95,13 @@ public class PebbleService extends Service {
     	return new PebbleKit.PebbleDataReceiver(WEATHER_UUID) {
             @Override
             public void receiveData(Context context, int transactionId, PebbleDictionary data) {
-            	
+            	// The watch app sends an <int, String> pair to be acted upon by this function
+            	// 0 -- Watch is sending a string message to the app
+            	// 1 -- Watch is sending a command
+            	// 2 -- Argument to command, if applicable.
             	String msg = data.getString(0);
-            	String cmd = data.getString(1);
+            	Long cmd = data.getInteger(1);
+            	String arg = data.getString(2);
                 
                 PebbleKit.sendAckToPebble(context, transactionId);
                 if(msg != null) {
@@ -115,7 +109,11 @@ public class PebbleService extends Service {
 	                sendAlertToPebble("Pong");
                 }
                 if(cmd != null) {
-                	doWeatherUpdate();
+                	int cmdidx = cmd.intValue();
+                	if(cmdidx < 0 || cmdidx >= Commands.values().length)
+                		return;
+                	Commands command = Commands.values()[cmdidx];
+                	runCommand(command, arg);
                 }
             }
         };
@@ -229,6 +227,20 @@ public class PebbleService extends Service {
 		PebbleService getService() {
 			return PebbleService.this;
 		}
+	}
+	
+	private void runCommand(Commands command, String arg) {
+		switch(command) {
+    	case SEND_WEATHER_DATA:
+    		doWeatherUpdate();
+    		break;
+    	case SEND_ALERT:
+    		String msg = arg;
+    		if(msg == null)
+    			break;
+    		sendAlertToPebble(msg);
+    		break;
+    	}
 	}
 
 }
