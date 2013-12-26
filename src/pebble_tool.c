@@ -1,3 +1,6 @@
+#include "quick_sms.h"
+#include "io.h"
+
 #include "pebble_os.h"
 #include "pebble_app.h"
 #include "pebble_fonts.h"
@@ -16,86 +19,14 @@ PBL_APP_INFO(MY_UUID,
 		DEFAULT_MENU_ICON,
 		APP_INFO_STANDARD_APP);
 
-static struct WeatherData {
-  Window window;
-  TextLayer temperature_layer;
-  BitmapLayer icon_layer;
-  uint32_t current_icon;
-  HeapBitmap icon_bitmap;
-  AppSync sync;
-  uint8_t sync_buffer[32];
-} s_data;
+WeatherData_t s_data;
 
-enum {
-  WEATHER_ICON_KEY = 0x0,         // TUPLE_INT
-  WEATHER_TEMPERATURE_KEY = 0x1,  // TUPLE_CSTRING
-};
-
-enum {
-	CMD_GET_WEATHER = 0
-};
-
-enum {
-	KEY_MSG = 0,
-	KEY_CMD
-};
-
-static uint32_t WEATHER_ICONS[] = {
+uint32_t WEATHER_ICONS[] = {
   RESOURCE_ID_IMAGE_SUN,
   RESOURCE_ID_IMAGE_CLOUD,
   RESOURCE_ID_IMAGE_RAIN,
   RESOURCE_ID_IMAGE_SNOW
 };
-
-
-static void load_bitmap(uint32_t resource_id) {
-  // If that resource is already the current icon, we don't need to reload it
-  if (s_data.current_icon == resource_id) {
-    return;
-  }
-  // Only deinit the current bitmap if a bitmap was previously loaded
-  if (s_data.current_icon != 0) {
-    heap_bitmap_deinit(&s_data.icon_bitmap);
-  }
-  // Keep track of what the current icon is
-  s_data.current_icon = resource_id;
-  // Load the new icon
-  heap_bitmap_init(&s_data.icon_bitmap, resource_id);
-}
-
-// TODO: Error handling
-static void sync_error_callback(DictionaryResult dict_error, AppMessageResult app_message_error, void *context) {
-}
-
-static void sync_tuple_changed_callback(const uint32_t key, const Tuple* new_tuple, const Tuple* old_tuple, void* context) {
-
-  switch (key) {
-  case WEATHER_ICON_KEY:
-	load_bitmap(WEATHER_ICONS[new_tuple->value->uint8]);
-    bitmap_layer_set_bitmap(&s_data.icon_layer, &s_data.icon_bitmap.bmp);
-    break;
-  case WEATHER_TEMPERATURE_KEY:
-    // App Sync keeps the new_tuple around, so we may use it directly
-    text_layer_set_text(&s_data.temperature_layer, new_tuple->value->cstring);
-    break;
-  default:
-    return;
-  }
-}
-
-static void send_msg(char *msg) {
-	AppSync sync = s_data.sync;
-	if(msg == NULL)
-		return;
-	Tuplet t = TupletCString(KEY_MSG, msg);
-	app_sync_set(&sync, &t, 1);
-}
-
-static void send_cmd(int cmd) {
-	AppSync sync = s_data.sync;
-	Tuplet t = TupletInteger(KEY_CMD, cmd);
-	app_sync_set(&sync, &t, 1);
-}
 
 void up_single_click_handler(ClickRecognizerRef recognizer, Window *window) {
 	send_msg("Ping");
@@ -103,12 +34,17 @@ void up_single_click_handler(ClickRecognizerRef recognizer, Window *window) {
 }
 
 void down_single_click_handler(ClickRecognizerRef recognizer, Window *window) {
-	send_cmd(CMD_GET_WEATHER);
+	send_cmd(CMD_GET_WEATHER, NULL);
+}
+
+void select_single_click_handler(ClickRecognizerRef recognizer, Window *window) {
+	window_stack_push(&QuickSMSData.window, true);
 }
 
 void click_config_provider(ClickConfig **config, Window *window) {
   config[BUTTON_ID_UP]->click.handler = (ClickHandler) up_single_click_handler;
   config[BUTTON_ID_DOWN]->click.handler = (ClickHandler) down_single_click_handler;
+  config[BUTTON_ID_SELECT]->click.handler = (ClickHandler) select_single_click_handler;
 }
 
 static void tool_app_init(AppContextRef c) {
@@ -141,7 +77,10 @@ static void tool_app_init(AppContextRef c) {
                 sync_tuple_changed_callback, sync_error_callback, NULL);
   window_set_click_config_provider(window, (ClickConfigProvider) click_config_provider);
 
+  QuickSMS_init();
+
   window_stack_push(window, true);
+
 }
 
 static void tool_app_deinit(AppContextRef c) {
