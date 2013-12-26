@@ -35,23 +35,13 @@ void sync_tuple_changed_callback(const uint32_t key, const Tuple* new_tuple, con
   }
 }
 
-void send_msg(char *msg) {
-	AppSync sync = s_data.sync;
-	if(msg == NULL)
-		return;
-	Tuplet t = TupletCString(KEY_MSG, msg);
-	app_sync_set(&sync, &t, 1);
-}
-
 void send_cmd(int cmd, const char *arg) {
 	static const char empty[] = "";
 	if(arg == NULL)
 		arg = empty;
-	AppSync sync = s_data.sync;
-	Tuplet cmd_arg_pair[2] = {TupletInteger(KEY_CMD, cmd),
-		TupletCString(KEY_CMD_ARG, arg)
-	};
-	app_sync_set(&sync, cmd_arg_pair, 2);
+	AppSync *sync = &s_data.sync;
+	Tuplet cmd_arg_pair = TupletCString(cmd, arg);
+	app_sync_set(sync, cmd_arg_pair, 1);
 }
 
 

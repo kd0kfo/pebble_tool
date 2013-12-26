@@ -29,7 +29,7 @@ uint32_t WEATHER_ICONS[] = {
 };
 
 void up_single_click_handler(ClickRecognizerRef recognizer, Window *window) {
-	send_msg("Ping");
+	send_cmd(CMD_SEND_ALERT, "Ping");
 	vibes_short_pulse();
 }
 

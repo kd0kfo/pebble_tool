@@ -19,27 +19,27 @@ extern WeatherData_t s_data;
 // Commands to be run on the phone
 enum {
 	CMD_GET_WEATHER = 0 /* Get weather data*/,
-	CMD_SEND_SMS
+	CMD_SEND_ALERT /* Alert to phone */,
+	CMD_SEND_SMS /* Send SMS */
 };
 
 // Dictionary Keys. Define the type of Tuple send to Phone App.
 enum {
-	KEY_MSG = 0/* Message to phone */,
-	KEY_CMD/* Command to be exectuted on phone */,
+	KEY_CMD = 0/* Command to be exectuted on phone */,
 	KEY_CMD_ARG/* cstring argument to command */
 };
 
-enum {
-  WEATHER_ICON_KEY = 0x0,         // TUPLE_INT
-  WEATHER_TEMPERATURE_KEY = 0x1,  // TUPLE_CSTRING
-};
+// TUPLE_INT
+#define WEATHER_ICON_KEY KEY_CMD
+
+// TUPLE_CSTRING
+#define WEATHER_TEMPERATURE_KEY KEY_CMD_ARG
 
 extern uint32_t WEATHER_ICONS[];
 
 void sync_tuple_changed_callback(const uint32_t key, const Tuple* new_tuple, const Tuple* old_tuple, void* context);
 void sync_error_callback(DictionaryResult dict_error, AppMessageResult app_message_error, void *context);
 
-void send_msg(char *msg);
 void send_cmd(int cmd, const char *);
 
 #endif

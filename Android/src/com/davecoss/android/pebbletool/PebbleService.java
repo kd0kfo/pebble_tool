@@ -6,6 +6,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 
@@ -40,7 +41,7 @@ public class PebbleService extends Service {
     // Commands 
     public static final String ANDROID_APP_COMMAND = "COMMAND";
     public static final String COMMAND_ARG_TYPE = "ARG";
-    public enum Commands {SEND_WEATHER_DATA, SEND_ALERT};
+    public enum Commands {SEND_WEATHER_DATA, SEND_ALERT, SEND_SMS};
     
     private PebbleKit.PebbleDataReceiver msgHandler = null;
     
@@ -95,26 +96,10 @@ public class PebbleService extends Service {
     	return new PebbleKit.PebbleDataReceiver(WEATHER_UUID) {
             @Override
             public void receiveData(Context context, int transactionId, PebbleDictionary data) {
-            	// The watch app sends an <int, String> pair to be acted upon by this function
-            	// 0 -- Watch is sending a string message to the app
-            	// 1 -- Watch is sending a command
-            	// 2 -- Argument to command, if applicable.
-            	String msg = data.getString(0);
-            	Long cmd = data.getInteger(1);
-            	String arg = data.getString(2);
+            	PebbleKit.sendAckToPebble(context, transactionId);
+                Iterator iterator = data.iterator();
+            	// TODO: Work on tuple. Iterate through <command, arg> pairs from watch.
                 
-                PebbleKit.sendAckToPebble(context, transactionId);
-                if(msg != null) {
-	                lastMessageReceived = msg;
-	                sendAlertToPebble("Pong");
-                }
-                if(cmd != null) {
-                	int cmdidx = cmd.intValue();
-                	if(cmdidx < 0 || cmdidx >= Commands.values().length)
-                		return;
-                	Commands command = Commands.values()[cmdidx];
-                	runCommand(command, arg);
-                }
             }
         };
     }
@@ -239,6 +224,10 @@ public class PebbleService extends Service {
     		if(msg == null)
     			break;
     		sendAlertToPebble(msg);
+    		break;
+    	case SEND_SMS:
+    		if(arg == null || arg.length() == 0)
+    			sendAlertToPebble("Cannot send empty SMS");
     		break;
     	}
 	}
