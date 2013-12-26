@@ -7,5 +7,7 @@
     <string name="msg_to_pebble">Message to Pebble</string>
     <string name="send_to_pebble">Send</string>
     <string name="weather">Weather</string>
+    <string name="PebbleService">Pebble Service</string>
+    <string name="PebbleServiceDescription">Service for Pebble Tool</string>
 
 </resources>

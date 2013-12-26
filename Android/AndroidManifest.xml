@@ -23,6 +23,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <service android:icon="@drawable/ic_launcher" android:description="@string/PebbleServiceDescription" android:label="@string/PebbleService" android:permission="android.permission.INTERNET" android:name="PebbleService" android:enabled="true"></service>
     </application>
 
 </manifest>
