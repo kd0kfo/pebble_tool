@@ -11,23 +11,29 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.davecoss.android.lib.Notifier;
 import com.getpebble.android.kit.PebbleKit;
 import com.getpebble.android.kit.util.PebbleDictionary;
 
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.TaskStackBuilder;
+import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 
 public class PebbleService extends Service {
-	IBinder binder = new PebbleBinder();
+    	IBinder binder = new PebbleBinder();
 	
 	// the tuple key corresponding to the weather icon displayed on the watch
     private static final int ICON_KEY = 0;
@@ -35,6 +41,8 @@ public class PebbleService extends Service {
     private static final int TEMP_KEY = 1;
     // This UUID identifies the weather app
     private static final UUID WEATHER_UUID = UUID.fromString("4D4A4DC2-2077-4AF6-B3DA-60DB398932F3");
+
+    protected static final int NOTIFIER_ID = 0;
 
     public enum WeatherType { CLEAR, RAIN, SNOW, PARTLY_CLOUDY, MOSTLY_CLOUDY, OVERCAST};
     
@@ -95,13 +103,35 @@ public class PebbleService extends Service {
     protected PebbleKit.PebbleDataReceiver createMsgHandlerInstance() {
     	return new PebbleKit.PebbleDataReceiver(WEATHER_UUID) {
             @Override
-            public void receiveData(Context context, int transactionId, PebbleDictionary data) {
-            	PebbleKit.sendAckToPebble(context, transactionId);
-                Iterator iterator = data.iterator();
-            	// TODO: Work on tuple. Iterate through <command, arg> pairs from watch.
-                
-            }
-        };
+			public void receiveData(Context context, int transactionId,
+					PebbleDictionary data) {
+				PebbleKit.sendAckToPebble(context, transactionId);
+
+				// PebbleDictionary needs a getKeys function :-(
+				JSONArray jsondata;
+				try {
+					jsondata = new JSONArray(data.toJsonString());
+				} catch (JSONException e) {
+					Log.e("PebbleService.receiveData", "Error creating json object: " + e.getMessage(), e);
+					return;
+				}
+				for(int arrayidx = 0;arrayidx < jsondata.length();arrayidx++) {
+					JSONObject currJsonObj = null;
+					try {
+						currJsonObj = jsondata.getJSONObject(arrayidx);
+						Log.i("PebbleService.receiveData", data.toJsonString());
+						int keyidx = currJsonObj.getInt("key");
+						String arg = currJsonObj.getString("value");
+						if(keyidx < 0 || keyidx >= Commands.values().length)
+							return;
+						runCommand(Commands.values()[keyidx], arg);
+					} catch (JSONException e) {
+						Log.e("PebbleService.receiveData", "Broken JSON Data from Pebble: " + e.getMessage(), e);
+						return;
+					}
+				}// end json array for loop
+			}
+		};
     }
     
 	public void doWeatherUpdate() {
@@ -227,9 +257,36 @@ public class PebbleService extends Service {
     		break;
     	case SEND_SMS:
     		if(arg == null || arg.length() == 0)
+		    {
     			sendAlertToPebble("Cannot send empty SMS");
+			break;
+		    }
+		postNotification(arg, "Sending SMS", PebbleTool.class);
     		break;
     	}
 	}
+
+    private int postNotification(String msg, String title, Class notifyingClass) {
+		NotificationCompat.Builder nbuilder =
+		    new NotificationCompat.Builder(this)
+		    .setSmallIcon(R.drawable.ic_launcher)
+		    .setContentTitle(title)
+		    .setContentText(msg);
+	
+		// Creates an explicit intent for an Activity in your app
+		Intent intent = new Intent(this, notifyingClass);
+	
+		TaskStackBuilder stackBuilder = TaskStackBuilder.create(this);
+		stackBuilder.addParentStack(notifyingClass);
+		// Adds the Intent that starts the Activity to the top of the stack
+		stackBuilder.addNextIntent(intent);
+		PendingIntent resultPendingIntent =
+		    stackBuilder.getPendingIntent(0,PendingIntent.FLAG_UPDATE_CURRENT);
+		nbuilder.setContentIntent(resultPendingIntent);
+		NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+		nm.notify(NOTIFIER_ID, nbuilder.build());
+	
+		return NOTIFIER_ID;
+    }
 
 }
