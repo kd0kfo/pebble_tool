@@ -41,7 +41,7 @@ void send_cmd(int cmd, const char *arg) {
 		arg = empty;
 	AppSync *sync = &s_data.sync;
 	Tuplet cmd_arg_pair = TupletCString(cmd, arg);
-	app_sync_set(sync, cmd_arg_pair, 1);
+	app_sync_set(sync, &cmd_arg_pair, 1);
 }
 
 

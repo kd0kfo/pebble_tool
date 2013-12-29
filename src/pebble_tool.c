@@ -1,4 +1,4 @@
-#include "quick_sms.h"
+#include "MorseInput.h"
 #include "io.h"
 
 #include "pebble_os.h"
@@ -38,7 +38,8 @@ void down_single_click_handler(ClickRecognizerRef recognizer, Window *window) {
 }
 
 void select_single_click_handler(ClickRecognizerRef recognizer, Window *window) {
-	window_stack_push(&QuickSMSData.window, true);
+  MorseInput_reset_morse();
+  window_stack_push(&MorseInputData.window, true);
 }
 
 void click_config_provider(ClickConfig **config, Window *window) {
@@ -77,7 +78,7 @@ static void tool_app_init(AppContextRef c) {
                 sync_tuple_changed_callback, sync_error_callback, NULL);
   window_set_click_config_provider(window, (ClickConfigProvider) click_config_provider);
 
-  QuickSMS_init();
+  MorseInput_init();
 
   window_stack_push(window, true);
 

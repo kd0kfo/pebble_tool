@@ -6,10 +6,12 @@
 typedef struct {
   Window window;
   TextLayer temperature_layer;
-}QuickSMSData_t;
+}MorseInputData_t;
 
-extern QuickSMSData_t QuickSMSData;
+extern MorseInputData_t MorseInputData;
 
-extern void QuickSMS_init();
+void MorseInput_init();
+
+void MorseInput_reset_morse();
 
 #endif
