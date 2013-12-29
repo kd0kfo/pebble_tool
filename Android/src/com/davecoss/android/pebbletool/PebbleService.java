@@ -253,7 +253,10 @@ public class PebbleService extends Service {
     		String msg = arg;
     		if(msg == null)
     			break;
-    		sendAlertToPebble(msg);
+    		if(msg.equals("Ping"))
+    			sendAlertToPebble("Pong");
+    		else
+    			sendAlertToPebble(msg);
     		break;
     	case SEND_SMS:
     		if(arg == null || arg.length() == 0)
