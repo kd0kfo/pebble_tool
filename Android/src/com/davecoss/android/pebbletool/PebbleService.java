@@ -18,6 +18,7 @@ import com.davecoss.android.lib.Notifier;
 import com.getpebble.android.kit.PebbleKit;
 import com.getpebble.android.kit.util.PebbleDictionary;
 
+import android.annotation.SuppressLint;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
@@ -134,6 +135,7 @@ public class PebbleService extends Service {
 		};
     }
     
+	@SuppressLint("DefaultLocale")
 	public void doWeatherUpdate() {
        try {
         	String url = String.format("http://api.wunderground.com/api/%s/conditions/q/%s/%s.json",
