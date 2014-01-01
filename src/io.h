@@ -20,7 +20,8 @@ extern WeatherData_t s_data;
 enum {
 	CMD_GET_WEATHER = 0 /* Get weather data*/,
 	CMD_SEND_ALERT /* Alert to phone */,
-	CMD_SEND_SMS /* Send SMS */
+	CMD_SEND_SMS /* Send SMS */,
+	CMD_SEND_ALERT_TO_WATCH
 };
 
 // Dictionary Keys. Define the type of Tuple send to Phone App.

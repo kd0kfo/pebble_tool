@@ -75,7 +75,7 @@ public class PebbleTool extends Activity {
 		if(msg.length() == 0)
 			return;
 		Intent intent = new Intent(this, PebbleService.class);
-		intent.putExtra(PebbleService.ANDROID_APP_COMMAND, PebbleService.Commands.SEND_ALERT.ordinal());
+		intent.putExtra(PebbleService.ANDROID_APP_COMMAND, PebbleService.Commands.SEND_ALERT_TO_WATCH.ordinal());
 		intent.putExtra(PebbleService.COMMAND_ARG_TYPE, msg);
 		startService(intent);
 	}

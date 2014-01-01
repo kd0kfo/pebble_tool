@@ -50,7 +50,7 @@ public class PebbleService extends Service {
     // Commands 
     public static final String ANDROID_APP_COMMAND = "COMMAND";
     public static final String COMMAND_ARG_TYPE = "ARG";
-    public enum Commands {SEND_WEATHER_DATA, SEND_ALERT, SEND_SMS};
+    public enum Commands {SEND_WEATHER_DATA, SEND_ALERT_TO_PHONE, SEND_SMS, SEND_ALERT_TO_WATCH};
     
     private PebbleKit.PebbleDataReceiver msgHandler = null;
     
@@ -251,23 +251,33 @@ public class PebbleService extends Service {
     	case SEND_WEATHER_DATA:
     		doWeatherUpdate();
     		break;
-    	case SEND_ALERT:
+    	case SEND_ALERT_TO_PHONE:
+    	{
     		String msg = arg;
-    		if(msg == null)
+    		if(msg == null || msg.length() == 0)
     			break;
-    		if(msg.equals("Ping"))
+    		if(msg.equals("ping"))
     			sendAlertToPebble("Pong");
     		else
-    			sendAlertToPebble(msg);
+    			postNotification(msg, "Message from Watch", PebbleTool.class);
     		break;
+    	}
     	case SEND_SMS:
     		if(arg == null || arg.length() == 0)
 		    {
     			sendAlertToPebble("Cannot send empty SMS");
-			break;
+    			break;
 		    }
-		postNotification(arg, "Sending SMS", PebbleTool.class);
+    		postNotification(arg, "Sending SMS", PebbleTool.class);
     		break;
+    	case SEND_ALERT_TO_WATCH:
+    	{
+    		String msg = arg;
+    		if(msg == null || msg.length() == 0)
+    			break;
+    		sendAlertToPebble(msg);
+    		break;
+    	}
     	}
 	}
 
@@ -276,7 +286,8 @@ public class PebbleService extends Service {
 		    new NotificationCompat.Builder(this)
 		    .setSmallIcon(R.drawable.ic_launcher)
 		    .setContentTitle(title)
-		    .setContentText(msg);
+		    .setContentText(msg)
+		    .setAutoCancel(true);
 	
 		// Creates an explicit intent for an Activity in your app
 		Intent intent = new Intent(this, notifyingClass);
