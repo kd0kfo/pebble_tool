@@ -6,18 +6,17 @@
 #include "pebble_fonts.h"
 #include "resource_ids.auto.h"
 
+#include "config.h"
+
 #include <stdint.h>
 #include <string.h>
 
-#define BITMAP_BUFFER_BYTES 1024
-
-// 4D4A4DC2-2077-4AF6-B3DA-60DB398932F3
-#define MY_UUID {0x4D, 0x4A, 0x4D, 0xC2, 0x20, 0x77, 0x4A, 0xF6, 0xB3, 0xDA, 0x60, 0xDB, 0x39, 0x89, 0x32, 0xF3}
 PBL_APP_INFO(MY_UUID,
-		"Pebble Tool", "davecoss.com",
-		0x0, 0x1, /** version **/
-		DEFAULT_MENU_ICON,
-		APP_INFO_STANDARD_APP);
+	     APP_NAME, APP_COMPANY,
+	     APP_VERSION_MAJOR, APP_VERSION_MINOR, /** version **/
+	     DEFAULT_MENU_ICON,
+	     APP_INFO_STANDARD_APP);
+
 
 WeatherData_t s_data;
 
@@ -37,8 +36,16 @@ void down_single_click_handler(ClickRecognizerRef recognizer, Window *window) {
 	send_cmd(CMD_GET_WEATHER, NULL);
 }
 
+void main_window_after_morse(MorseInputStatus status, const char *buffer, size_t buffersize) {
+	if(status == MORSE_INPUT_STATUS_SUCCESS) {
+		text_layer_set_text(&s_data.temperature_layer, buffer);
+	} else {
+		text_layer_set_text(&s_data.temperature_layer, "Error");
+	}
+}
+
 void select_single_click_handler(ClickRecognizerRef recognizer, Window *window) {
-  MorseInput_reset_morse();
+  MorseInput_setup(main_window_after_morse);
   window_stack_push(&MorseInputData.window, true);
 }
 
@@ -47,6 +54,19 @@ void click_config_provider(ClickConfig **config, Window *window) {
   config[BUTTON_ID_DOWN]->click.handler = (ClickHandler) down_single_click_handler;
   config[BUTTON_ID_SELECT]->click.handler = (ClickHandler) select_single_click_handler;
 }
+
+void main_window_load(struct Window *window) {
+}
+
+void main_window_appear(struct Window *window) {
+}
+
+void main_window_disappear(struct Window *window) {
+}
+
+void main_window_unload(struct Window *window) {
+}
+
 
 static void tool_app_init(AppContextRef c) {
 
@@ -74,9 +94,17 @@ static void tool_app_init(AppContextRef c) {
     TupletInteger(WEATHER_ICON_KEY, (uint8_t) 1),
     TupletCString(WEATHER_TEMPERATURE_KEY, "???\u00B0F"),
   };
-  app_sync_init(&s_data.sync, s_data.sync_buffer, sizeof(s_data.sync_buffer), initial_values, ARRAY_LENGTH(initial_values),
+  app_sync_init(&s_data.sync, s_data.sync_buffer, sizeof(s_data.sync_buffer),
+		initial_values, ARRAY_LENGTH(initial_values),
                 sync_tuple_changed_callback, sync_error_callback, NULL);
   window_set_click_config_provider(window, (ClickConfigProvider) click_config_provider);
+
+  WindowHandlers handlers = {.load = main_window_load,
+			     .appear = main_window_appear,
+			     .disappear = main_window_disappear,
+			     .unload = main_window_unload
+  };
+  window_set_window_handlers(window, handlers);
 
   MorseInput_init();
 

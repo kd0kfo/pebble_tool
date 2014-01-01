@@ -16,6 +16,9 @@ char MorseInput_screen_buffer[MorseInput_screen_buffer_size];
 size_t MorseInput_morse_buffer_idx = 0;
 char MorseInput_morse_buffer[MorseInput_morse_buffer_size];
 
+// Called when the dialog closes
+static MorseInput_Response *response_function = NULL;
+
 void MorseInput_reset_morse() {
   MorseInput_morse_buffer_idx = 0;
   MorseInput_morse_buffer[MorseInput_morse_buffer_idx] = 0;
@@ -23,6 +26,11 @@ void MorseInput_reset_morse() {
   MorseInput_screen_buffer_idx = 0;
   MorseInput_screen_buffer[MorseInput_screen_buffer_idx] = 0;
   layer_mark_dirty(&MorseInputData.temperature_layer.layer);
+}
+
+void MorseInput_setup(MorseInput_Response *response_funct) {
+    MorseInput_reset_morse();
+    response_function = response_funct;
 }
 
 void MorseInput_update_screen_buffer(char ch) {
@@ -69,6 +77,24 @@ void MorseInput_click_config_provider(ClickConfig **config, Window *window) {
   config[BUTTON_ID_SELECT]->click.handler = (ClickHandler) MorseInput_select_single_click_handler;
 }
 
+void MorseInput_load(struct Window *window) {
+	text_layer_set_text(&MorseInputData.temperature_layer, "Enter Text Here");
+}
+
+void MorseInput_appear(struct Window *window) {
+}
+
+void MorseInput_disappear(struct Window *window) {
+	MorseInput_screen_buffer[MorseInput_screen_buffer_idx] = 0;
+	if(response_function != NULL) {
+		(*response_function)(MORSE_INPUT_STATUS_SUCCESS, MorseInput_screen_buffer, MorseInput_screen_buffer_idx);
+		response_function = NULL;
+	}
+}
+
+void MorseInput_unload(struct Window *window) {
+}
+
 void MorseInput_init() {
 
     Window* window = &MorseInputData.window;
@@ -76,12 +102,18 @@ void MorseInput_init() {
   window_set_background_color(window, GColorBlack);
   window_set_fullscreen(window, true);
 
+  WindowHandlers handlers = {.load = MorseInput_load,
+  			     .appear = MorseInput_appear,
+  			     .disappear = MorseInput_disappear,
+  			     .unload = MorseInput_unload
+  };
+  window_set_window_handlers(window, handlers);
+
     text_layer_init(&MorseInputData.temperature_layer, GRect(0, 100, 144, 68));
   text_layer_set_text_color(&MorseInputData.temperature_layer, GColorWhite);
   text_layer_set_background_color(&MorseInputData.temperature_layer, GColorClear);
   text_layer_set_font(&MorseInputData.temperature_layer, fonts_get_system_font(FONT_KEY_GOTHIC_28_BOLD));
   text_layer_set_text_alignment(&MorseInputData.temperature_layer, GTextAlignmentCenter);
-  text_layer_set_text(&MorseInputData.temperature_layer, "FOO!");
   layer_add_child(&window->layer, &MorseInputData.temperature_layer.layer);
 
   window_set_click_config_provider(window, (ClickConfigProvider) MorseInput_click_config_provider);
