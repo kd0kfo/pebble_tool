@@ -6,7 +6,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.UUID;
 
@@ -14,7 +13,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.davecoss.android.lib.Notifier;
 import com.getpebble.android.kit.PebbleKit;
 import com.getpebble.android.kit.util.PebbleDictionary;
 
@@ -25,13 +23,11 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Binder;
-import android.os.Handler;
 import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.TaskStackBuilder;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
-import android.view.View;
-import android.widget.EditText;
 
 public class PebbleService extends Service {
     	IBinder binder = new PebbleBinder();
@@ -48,6 +44,7 @@ public class PebbleService extends Service {
     public enum WeatherType { CLEAR, RAIN, SNOW, PARTLY_CLOUDY, MOSTLY_CLOUDY, OVERCAST};
     
     // Commands 
+    public static final String ANDROID_APP_GET_LAST_WEATHER = "LASTWEATHER";
     public static final String ANDROID_APP_COMMAND = "COMMAND";
     public static final String COMMAND_ARG_TYPE = "ARG";
     public enum Commands {SEND_WEATHER_DATA, SEND_ALERT_TO_PHONE, SEND_SMS, SEND_ALERT_TO_WATCH};
@@ -55,7 +52,7 @@ public class PebbleService extends Service {
     private PebbleKit.PebbleDataReceiver msgHandler = null;
     
     protected String lastMessageReceived = "";
-    protected WeatherData lastWeatherData = new WeatherData(-1.0, WeatherType.MOSTLY_CLOUDY);
+    protected WeatherData lastWeatherData = null;
     
     @Override
 	public void onCreate() {
@@ -77,6 +74,17 @@ public class PebbleService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
     	int idx = intent.getIntExtra(ANDROID_APP_COMMAND, -1);
+    	
+    	if(intent.getBooleanExtra(ANDROID_APP_GET_LAST_WEATHER, false))
+    	{
+    		Intent replyIntent = new Intent(PebbleTool.PEBBLE_TOOL_RECEIVER);
+    		if(lastWeatherData != null){
+    			replyIntent.putExtra("temperature", lastWeatherData.temperature);
+    			replyIntent.putExtra("timestamp", lastWeatherData.measureDateTime);
+    		  LocalBroadcastManager.getInstance(this).sendBroadcast(replyIntent);
+    		}
+    	}
+    	
     	if(idx == -1 || idx >= Commands.values().length)
 		{
     		return START_STICKY;
@@ -137,6 +145,17 @@ public class PebbleService extends Service {
     
 	@SuppressLint("DefaultLocale")
 	public void doWeatherUpdate() {
+		// If last weather data is less than an hour old, don't update.
+		if(lastWeatherData != null) {
+			Date now = new Date();
+			if(now.getTime() - lastWeatherData.measureDateTime.getTime() < 3600000L)
+			{
+				sendWeatherDataToWatch(lastWeatherData);
+				return;
+			}
+		}
+		
+		// If there, weather data needs to be updated
        try {
         	String url = String.format("http://api.wunderground.com/api/%s/conditions/q/%s/%s.json",
         			getString(R.string.APIKEY),
