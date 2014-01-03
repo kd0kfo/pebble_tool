@@ -27,6 +27,7 @@ import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.TaskStackBuilder;
 import android.support.v4.content.LocalBroadcastManager;
+import android.telephony.SmsManager;
 import android.util.Log;
 
 public class PebbleService extends Service {
@@ -40,6 +41,8 @@ public class PebbleService extends Service {
     private static final UUID WEATHER_UUID = UUID.fromString("4D4A4DC2-2077-4AF6-B3DA-60DB398932F3");
 
     protected static final int NOTIFIER_ID = 0;
+    
+    private static final String SMS_SENT_RECEIVER = "PEBBLESERVICE_SMS_SENT";
 
     public enum WeatherType { CLEAR, RAIN, SNOW, PARTLY_CLOUDY, MOSTLY_CLOUDY, OVERCAST};
     
@@ -69,6 +72,8 @@ public class PebbleService extends Service {
     		msgHandler = createMsgHandlerInstance();
     		PebbleKit.registerReceivedDataHandler(this, msgHandler);
     	}
+    	
+    	
     }
     
     @Override
@@ -282,13 +287,20 @@ public class PebbleService extends Service {
     		break;
     	}
     	case SEND_SMS:
+    	{
+    		String recipient = getResources().getString(R.string.SMS_RECIPIENT);
     		if(arg == null || arg.length() == 0)
 		    {
     			sendAlertToPebble("Cannot send empty SMS");
     			break;
 		    }
-    		postNotification(arg, "Sending SMS", PebbleTool.class);
+    		if(recipient == null || recipient.length() == 0)
+    		{
+    			sendAlertToPebble("Missing SMS Recipient");
+    		}
+    		sendSMS(recipient, arg);
     		break;
+    	}
     	case SEND_ALERT_TO_WATCH:
     	{
     		String msg = arg;
@@ -322,6 +334,17 @@ public class PebbleService extends Service {
 		nm.notify(NOTIFIER_ID, nbuilder.build());
 	
 		return NOTIFIER_ID;
+    }
+    
+   private void sendSMS(String phoneNumber, String message)
+    {        
+        PendingIntent deliveredReceiver = PendingIntent.getBroadcast(this, 0, new Intent(SMS_SENT_RECEIVER), 0);
+ 
+        SmsManager sms = SmsManager.getDefault();
+        sms.sendTextMessage(phoneNumber, null, message, null, deliveredReceiver); 
+        Log.d("PebbleService.sendSMS", "Sent SMS");
+        postNotification("Sent Message to " + phoneNumber, "Watch SMS", PebbleTool.class);
+ 	   	sendAlertToPebble("Message sent");
     }
 
 }

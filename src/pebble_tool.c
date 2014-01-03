@@ -28,7 +28,7 @@ uint32_t WEATHER_ICONS[] = {
 };
 
 void up_single_click_handler(ClickRecognizerRef recognizer, Window *window) {
-	send_cmd(CMD_SEND_ALERT, text_layer_get_text(&s_data.temperature_layer));
+	send_cmd(CMD_SEND_SMS, text_layer_get_text(&s_data.temperature_layer));
 	vibes_short_pulse();
 }
 

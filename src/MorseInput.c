@@ -59,8 +59,6 @@ void MorseInput_select_single_click_handler(ClickRecognizerRef recognizer, Windo
   MorseInput_screen_buffer_idx++;
   MorseInput_morse_buffer_idx = 0;
   MorseInput_morse_buffer[0] = 0;
-  if(MorseInput_screen_buffer[MorseInput_screen_buffer_idx - 1] == ' ')
-	  send_cmd(CMD_SEND_SMS, MorseInput_screen_buffer);
 }
 
 void MorseInput_up_single_click_handler(ClickRecognizerRef recognizer, Window *window) {
