@@ -33,7 +33,7 @@ import android.util.Log;
 public class PebbleService extends Service {
     	IBinder binder = new PebbleBinder();
 	
-	// the tuple key corresponding to the weather icon displayed on the watch
+    // the tuple key corresponding to the weather icon displayed on the watch
     private static final int ICON_KEY = 0;
     // the tuple key corresponding to the temperature displayed on the watch
     private static final int TEMP_KEY = 1;
@@ -45,12 +45,6 @@ public class PebbleService extends Service {
     private static final String SMS_SENT_RECEIVER = "PEBBLESERVICE_SMS_SENT";
 
     public enum WeatherType { CLEAR, RAIN, SNOW, PARTLY_CLOUDY, MOSTLY_CLOUDY, OVERCAST};
-    
-    // Commands 
-    public static final String ANDROID_APP_GET_LAST_WEATHER = "LASTWEATHER";
-    public static final String ANDROID_APP_COMMAND = "COMMAND";
-    public static final String COMMAND_ARG_TYPE = "ARG";
-    public enum Commands {SEND_WEATHER_DATA, SEND_ALERT_TO_PHONE, SEND_SMS, SEND_ALERT_TO_WATCH};
     
     private PebbleKit.PebbleDataReceiver msgHandler = null;
     
@@ -72,15 +66,16 @@ public class PebbleService extends Service {
     		msgHandler = createMsgHandlerInstance();
     		PebbleKit.registerReceivedDataHandler(this, msgHandler);
     	}
-    	
-    	
+
+	// Let the watch know we're here.
+    	if(msgHandler != null)
+	    sendAlertToPebble("Pebble Service Started");
     }
     
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-    	int idx = intent.getIntExtra(ANDROID_APP_COMMAND, -1);
     	
-    	if(intent.getBooleanExtra(ANDROID_APP_GET_LAST_WEATHER, false))
+    	if(intent.hasExtra(Commands.ANDROID_APP_GET_LAST_WEATHER))
     	{
     		Intent replyIntent = new Intent(PebbleTool.PEBBLE_TOOL_RECEIVER);
     		if(lastWeatherData != null){
@@ -89,15 +84,13 @@ public class PebbleService extends Service {
     		  LocalBroadcastManager.getInstance(this).sendBroadcast(replyIntent);
     		}
     	}
+
+    	Commands.CommandCode cmd = Commands.getCommandCode(intent);
     	
-    	if(idx == -1 || idx >= Commands.values().length)
-		{
-    		return START_STICKY;
-		}
-    	
-    	Commands cmd = Commands.values()[idx];
-    	
-    	runCommand(cmd, intent.getStringExtra(COMMAND_ARG_TYPE));
+    	if(cmd != null)
+	   {
+	       runCommand(cmd, intent.getStringExtra(COMMAND_ARG_TYPE));
+	   }
     	
         return START_STICKY;
     }
@@ -135,10 +128,11 @@ public class PebbleService extends Service {
 						currJsonObj = jsondata.getJSONObject(arrayidx);
 						Log.i("PebbleService.receiveData", data.toJsonString());
 						int keyidx = currJsonObj.getInt("key");
+						CommandCode cmd = Commands.getCommandCode(keyidx);
+						if(cmd == null)
+						    return;
 						String arg = currJsonObj.getString("value");
-						if(keyidx < 0 || keyidx >= Commands.values().length)
-							return;
-						runCommand(Commands.values()[keyidx], arg);
+						runCommand(cmd, arg);
 					} catch (JSONException e) {
 						Log.e("PebbleService.receiveData", "Broken JSON Data from Pebble: " + e.getMessage(), e);
 						return;
@@ -270,12 +264,18 @@ public class PebbleService extends Service {
 		}
 	}
 	
-	private void runCommand(Commands command, String arg) {
+	private void runCommand(Commands.CommandCode command, String arg) {
+	    if(command == null)
+		return;
+
 		switch(command) {
-    	case SEND_WEATHER_DATA:
+		case Commands.CommandCode.SEND_SMS_RECIPIENT:
+		    sendAlertToPebble("Recipient: " + getRecipient());
+		    break;
+    	case Commands.CommandCode.SEND_WEATHER_DATA:
     		doWeatherUpdate();
     		break;
-    	case SEND_ALERT_TO_PHONE:
+    	case Commands.CommandCode.SEND_ALERT_TO_PHONE:
     	{
     		String msg = arg;
     		if(msg == null || msg.length() == 0)
@@ -286,9 +286,9 @@ public class PebbleService extends Service {
     			postNotification(msg, "Message from Watch", PebbleTool.class);
     		break;
     	}
-    	case SEND_SMS:
+    	case Commands.CommandCode.SEND_SMS:
     	{
-    		String recipient = getResources().getString(R.string.SMS_RECIPIENT);
+	    String recipient = getResources().getString(R.string.SMS_RECIPIENT);
     		if(arg == null || arg.length() == 0)
 		    {
     			sendAlertToPebble("Cannot send empty SMS");
@@ -301,7 +301,7 @@ public class PebbleService extends Service {
     		sendSMS(recipient, arg);
     		break;
     	}
-    	case SEND_ALERT_TO_WATCH:
+    	case Commands.CommandCode.SEND_ALERT_TO_WATCH:
     	{
     		String msg = arg;
     		if(msg == null || msg.length() == 0)
@@ -309,6 +309,8 @@ public class PebbleService extends Service {
     		sendAlertToPebble(msg);
     		break;
     	}
+		case NOOP: default:
+		    break;
     	}
 	}
 

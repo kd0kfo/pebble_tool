@@ -30,8 +30,9 @@ public class PebbleTool extends Activity {
 		notifier = new Notifier(getApplicationContext());
 		
 
-    	TextView weatherUpdate = (TextView)findViewById(R.id.txtLastUpdate);
-    	weatherUpdate.setText("");
+		TextView weatherUpdate = (TextView)findViewById(R.id.txtLastUpdate);
+		weatherUpdate.setText("");
+	        
 	}
 	
 	@Override
@@ -41,6 +42,10 @@ public class PebbleTool extends Activity {
 		LocalBroadcastManager.getInstance(this).registerReceiver(serviceReceiver,
 				new IntentFilter(PEBBLE_TOOL_RECEIVER));
 		showLastWeatherData();
+
+		// Ensure that if the Activity has been started, the service has been started also.
+		Intent wakeUp = Commands.createIntent(this, PebbleService.class, Commands.CommandCode.NOOP);
+		startService(wakeUp);
 	}
 	
 	@Override
@@ -59,10 +64,9 @@ public class PebbleTool extends Activity {
 	
 	public void updateWeather(View view) {
 		try {
-			Intent intent = new Intent(this, PebbleService.class);
-			intent.putExtra(PebbleService.ANDROID_APP_COMMAND, PebbleService.Commands.SEND_WEATHER_DATA.ordinal());
-			startService(intent);
-			showLastWeatherData();
+		    Intent intent = Commands.createIntent(this, PebbleService.class, Commands.CommandCode.SEND_WEATHER_DATA);
+		    startService(intent);
+		    showLastWeatherData();
 		} catch(RuntimeException re) {
 			notifier.log_exception("PebbleTool.onCreate", re.getMessage(), re);
 		}
@@ -85,16 +89,13 @@ public class PebbleTool extends Activity {
 		msg = msg.trim();
 		if(msg.length() == 0)
 			return;
-		Intent intent = new Intent(this, PebbleService.class);
-		intent.putExtra(PebbleService.ANDROID_APP_COMMAND, PebbleService.Commands.SEND_ALERT_TO_WATCH.ordinal());
-		intent.putExtra(PebbleService.COMMAND_ARG_TYPE, msg);
+		Intent intent = Commands.createIntent(this, PebbleService.class, PebbleService.Commands.SEND_ALERT_TO_WATCH.ordinal(), msg);
 		startService(intent);
 	}
 	
 	private void showLastWeatherData() {
-		Intent intent = new Intent(this, PebbleService.class);
-		intent.putExtra(PebbleService.ANDROID_APP_GET_LAST_WEATHER, true);
-		startService(intent);
+	    Intent intent = Commands.createIntent(this, PebbleService.class,Commands.CommandCode.ANDROID_APP_GET_LAST_WEATHER, "");
+	    startService(intent);
 	}
 
 	// handler for received Intents for the "my-event" event 
@@ -128,7 +129,5 @@ public class PebbleTool extends Activity {
 		}
 	  }
 	};
-
-	
 
 }
