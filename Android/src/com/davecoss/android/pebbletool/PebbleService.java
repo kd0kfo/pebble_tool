@@ -125,6 +125,10 @@ public class PebbleService extends Service {
 				JSONArray jsondata;
 				try {
 					jsondata = new JSONArray(data.toJsonString());
+					if(jsondata == null)
+						Log.i("PebbleService.receiveData", "NULL pointer for Received Data");
+					else
+						Log.i("PebbleService.receiveData", jsondata.toJsonString());
 				} catch (JSONException e) {
 					Log.e("PebbleService.receiveData", "Error creating json object: " + e.getMessage(), e);
 					return;
@@ -133,7 +137,6 @@ public class PebbleService extends Service {
 					JSONObject currJsonObj = null;
 					try {
 						currJsonObj = jsondata.getJSONObject(arrayidx);
-						Log.i("PebbleService.receiveData", data.toJsonString());
 						int keyidx = currJsonObj.getInt("key");
 						String arg = currJsonObj.getString("value");
 						if(keyidx < 0 || keyidx >= Commands.values().length)
