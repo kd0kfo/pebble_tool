@@ -48,6 +48,7 @@ public class PebbleService extends Service {
     
     // Commands 
     public static final String ANDROID_APP_GET_LAST_WEATHER = "LASTWEATHER";
+    public static final String ANDROID_APP_SMS_RECIPIENT = "SMSRECIPIENT";
     public static final String ANDROID_APP_COMMAND = "COMMAND";
     public static final String COMMAND_ARG_TYPE = "ARG";
     public enum Commands {SEND_WEATHER_DATA, SEND_ALERT_TO_PHONE, SEND_SMS, SEND_ALERT_TO_WATCH};
@@ -56,6 +57,7 @@ public class PebbleService extends Service {
     
     protected String lastMessageReceived = "";
     protected WeatherData lastWeatherData = null;
+    protected String SMSRecipient = null;
     
     @Override
 	public void onCreate() {
@@ -88,6 +90,17 @@ public class PebbleService extends Service {
     			replyIntent.putExtra("timestamp", lastWeatherData.measureDateTime);
     		  LocalBroadcastManager.getInstance(this).sendBroadcast(replyIntent);
     		}
+    	}
+    	
+    	if(intent.hasExtra(ANDROID_APP_SMS_RECIPIENT)) {
+    		String new_number = intent.getStringExtra(ANDROID_APP_SMS_RECIPIENT);
+    		if(new_number != null && new_number.trim().length() != 0) {
+    			SMSRecipient = new_number.trim();
+    		}
+    		
+    		Intent replyIntent = new Intent(PebbleTool.PEBBLE_TOOL_RECEIVER);
+    		replyIntent.putExtra("smsrecipient", getSMSRecipient());
+    		LocalBroadcastManager.getInstance(this).sendBroadcast(replyIntent);
     	}
     	
     	if(idx == -1 || idx >= Commands.values().length)
@@ -270,6 +283,12 @@ public class PebbleService extends Service {
 		}
 	}
 	
+	private String getSMSRecipient() {
+		if(SMSRecipient == null)
+			return getResources().getString(R.string.SMS_RECIPIENT);
+		return SMSRecipient;
+	}
+	
 	private void runCommand(Commands command, String arg) {
 		switch(command) {
     	case SEND_WEATHER_DATA:
@@ -288,7 +307,7 @@ public class PebbleService extends Service {
     	}
     	case SEND_SMS:
     	{
-    		String recipient = getResources().getString(R.string.SMS_RECIPIENT);
+    		String recipient = getSMSRecipient();
     		if(arg == null || arg.length() == 0)
 		    {
     			sendAlertToPebble("Cannot send empty SMS");

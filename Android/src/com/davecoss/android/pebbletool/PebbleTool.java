@@ -32,6 +32,8 @@ public class PebbleTool extends Activity {
 
     	TextView weatherUpdate = (TextView)findViewById(R.id.txtLastUpdate);
     	weatherUpdate.setText("");
+    	
+    	sendAlertToWatch("PebbleTool Connected.");
 	}
 	
 	@Override
@@ -41,6 +43,8 @@ public class PebbleTool extends Activity {
 		LocalBroadcastManager.getInstance(this).registerReceiver(serviceReceiver,
 				new IntentFilter(PEBBLE_TOOL_RECEIVER));
 		showLastWeatherData();
+		updateSMSRecipient();
+		
 	}
 	
 	@Override
@@ -83,6 +87,10 @@ public class PebbleTool extends Activity {
 		if(msg == null)
 			return;
 		msg = msg.trim();
+		sendAlertToWatch(msg);
+	}
+	
+	private void sendAlertToWatch(String msg) {
 		if(msg.length() == 0)
 			return;
 		Intent intent = new Intent(this, PebbleService.class);
@@ -91,9 +99,25 @@ public class PebbleTool extends Activity {
 		startService(intent);
 	}
 	
+	public void setSMSRecipient(View btn) {
+		TextView tv = (TextView) findViewById(R.id.numSMSRecipient);
+		
+		String number = tv.getText().toString().trim();
+		
+		Intent intent = new Intent(this, PebbleService.class);
+		intent.putExtra(PebbleService.ANDROID_APP_SMS_RECIPIENT, number);
+		startService(intent);
+	}
+	
 	private void showLastWeatherData() {
 		Intent intent = new Intent(this, PebbleService.class);
 		intent.putExtra(PebbleService.ANDROID_APP_GET_LAST_WEATHER, true);
+		startService(intent);
+	}
+	
+	private void updateSMSRecipient() {
+		Intent intent = new Intent(this, PebbleService.class);
+		intent.putExtra(PebbleService.ANDROID_APP_SMS_RECIPIENT, "");
 		startService(intent);
 	}
 
@@ -102,6 +126,12 @@ public class PebbleTool extends Activity {
 	  @Override
 	  public void onReceive(Context context, Intent intent) {
 		Log.d("PebbleTool.serviceReceiver", "Received message");
+		
+		if(intent.hasExtra("smsrecipient")) {
+			TextView tv = (TextView) findViewById(R.id.txtSMSRecipient);
+			tv.setText(intent.getStringExtra("smsrecipient"));
+		}
+		
 		if(!intent.hasExtra("temperature"))
 			return;
 		double temp = intent.getDoubleExtra("temperature", -42);
