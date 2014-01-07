@@ -30,6 +30,7 @@ uint32_t WEATHER_ICONS[] = {
 };
 
 void up_single_click_handler(ClickRecognizerRef recognizer, Window *window) {
+	send_cmd(CMD_SEND_ALERT, "ping");
 }
 
 void down_single_click_handler(ClickRecognizerRef recognizer, Window *window) {
