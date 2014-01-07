@@ -48,4 +48,37 @@
 
     </LinearLayout>
 
+    <EditText
+        android:id="@+id/numSMSRecipient"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:hint="@string/NumRecipient"
+        android:inputType="phone" />
+
+    <Button
+        android:id="@+id/btnSetSMSRecipient"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:onClick="setSMSRecipient"
+        android:text="@string/SetSMSRecipient" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" >
+
+        <TextView
+            android:id="@+id/textView1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/SMS_Recipient" />
+
+        <TextView
+            android:id="@+id/txtSMSRecipient"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="TextView" />
+
+    </LinearLayout>
+
 </LinearLayout>

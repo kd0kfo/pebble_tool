@@ -9,5 +9,8 @@
     <string name="weather">Weather</string>
     <string name="PebbleService">Pebble Service</string>
     <string name="PebbleServiceDescription">Service for Pebble Tool</string>
+    <string name="SMS_Recipient">SMS Recipient</string>
+    <string name="NumRecipient">15551234567</string>
+    <string name="SetSMSRecipient">Set Recipient</string>
 
 </resources>

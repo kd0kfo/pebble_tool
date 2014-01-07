@@ -50,6 +50,7 @@ public class PebbleService extends Service {
     
     protected String lastMessageReceived = "";
     protected WeatherData lastWeatherData = null;
+    protected String SMSRecipient = null;
     
     @Override
 	public void onCreate() {
@@ -89,7 +90,7 @@ public class PebbleService extends Service {
     	
     	if(cmd != null)
 	   {
-	       runCommand(cmd, intent.getStringExtra(COMMAND_ARG_TYPE));
+	       runCommand(cmd, intent.getStringExtra(Commands.COMMAND_ARG_TYPE));
 	   }
     	
         return START_STICKY;
@@ -118,6 +119,10 @@ public class PebbleService extends Service {
 				JSONArray jsondata;
 				try {
 					jsondata = new JSONArray(data.toJsonString());
+					if(jsondata == null)
+						Log.i("PebbleService.receiveData", "NULL pointer for Received Data");
+					else
+						Log.i("PebbleService.receiveData", jsondata.toString());
 				} catch (JSONException e) {
 					Log.e("PebbleService.receiveData", "Error creating json object: " + e.getMessage(), e);
 					return;
@@ -126,9 +131,8 @@ public class PebbleService extends Service {
 					JSONObject currJsonObj = null;
 					try {
 						currJsonObj = jsondata.getJSONObject(arrayidx);
-						Log.i("PebbleService.receiveData", data.toJsonString());
 						int keyidx = currJsonObj.getInt("key");
-						CommandCode cmd = Commands.getCommandCode(keyidx);
+						Commands.CommandCode cmd = Commands.getCommandCode(keyidx);
 						if(cmd == null)
 						    return;
 						String arg = currJsonObj.getString("value");
@@ -264,54 +268,57 @@ public class PebbleService extends Service {
 		}
 	}
 	
-	private void runCommand(Commands.CommandCode command, String arg) {
-	    if(command == null)
-		return;
 
-		switch(command) {
-		case Commands.CommandCode.SEND_SMS_RECIPIENT:
-		    sendAlertToPebble("Recipient: " + getRecipient());
-		    break;
-    	case Commands.CommandCode.SEND_WEATHER_DATA:
-    		doWeatherUpdate();
-    		break;
-    	case Commands.CommandCode.SEND_ALERT_TO_PHONE:
-    	{
-    		String msg = arg;
-    		if(msg == null || msg.length() == 0)
-    			break;
-    		if(msg.equals("ping"))
-    			sendAlertToPebble("Pong");
-    		else
-    			postNotification(msg, "Message from Watch", PebbleTool.class);
-    		break;
-    	}
-    	case Commands.CommandCode.SEND_SMS:
-    	{
-	    String recipient = getResources().getString(R.string.SMS_RECIPIENT);
-    		if(arg == null || arg.length() == 0)
-		    {
-    			sendAlertToPebble("Cannot send empty SMS");
-    			break;
-		    }
-    		if(recipient == null || recipient.length() == 0)
-    		{
-    			sendAlertToPebble("Missing SMS Recipient");
-    		}
-    		sendSMS(recipient, arg);
-    		break;
-    	}
-    	case Commands.CommandCode.SEND_ALERT_TO_WATCH:
-    	{
-    		String msg = arg;
-    		if(msg == null || msg.length() == 0)
-    			break;
-    		sendAlertToPebble(msg);
-    		break;
-    	}
-		case NOOP: default:
-		    break;
-    	}
+	private String getSMSRecipient() {
+		if(SMSRecipient == null)
+			return getResources().getString(R.string.SMS_RECIPIENT);
+		return SMSRecipient;
+	}
+	
+	private void runCommand(Commands.CommandCode command, String arg) {
+		if (command == null)
+			return;
+		switch (command) {
+		case SEND_SMS_RECIPIENT:
+			sendAlertToPebble("Recipient: " + getSMSRecipient());
+			break;
+		case SEND_WEATHER_DATA:
+			doWeatherUpdate();
+			break;
+		case SEND_ALERT_TO_PHONE: {
+			String msg = arg;
+			if (msg == null || msg.length() == 0)
+				break;
+			if (msg.equals("ping"))
+				sendAlertToPebble("Pong");
+			else
+				postNotification(msg, "Message from Watch", PebbleTool.class);
+			break;
+		}
+		case SEND_SMS: {
+			String recipient = getSMSRecipient();
+
+			if (arg == null || arg.length() == 0) {
+				sendAlertToPebble("Cannot send empty SMS");
+				break;
+			}
+			if (recipient == null || recipient.length() == 0) {
+				sendAlertToPebble("Missing SMS Recipient");
+			}
+			sendSMS(recipient, arg);
+			break;
+		}
+		case SEND_ALERT_TO_WATCH: {
+			String msg = arg;
+			if (msg == null || msg.length() == 0)
+				break;
+			sendAlertToPebble(msg);
+			break;
+		}
+		case NOOP:
+		default:
+			break;
+		}
 	}
 
     private int postNotification(String msg, String title, Class notifyingClass) {

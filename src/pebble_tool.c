@@ -1,4 +1,5 @@
 #include "MorseInput.h"
+#include "smsmenu.h"
 #include "io.h"
 #include "commands.h"
 
@@ -29,25 +30,14 @@ uint32_t WEATHER_ICONS[] = {
 };
 
 void up_single_click_handler(ClickRecognizerRef recognizer, Window *window) {
-	send_cmd(CMD_SEND_SMS, text_layer_get_text(&s_data.temperature_layer));
-	vibes_short_pulse();
 }
 
 void down_single_click_handler(ClickRecognizerRef recognizer, Window *window) {
 	send_cmd(CMD_GET_WEATHER, NULL);
 }
 
-void main_window_after_morse(MorseInputStatus status, const char *buffer, size_t buffersize) {
-	if(status == MORSE_INPUT_STATUS_SUCCESS) {
-		text_layer_set_text(&s_data.temperature_layer, buffer);
-	} else {
-		text_layer_set_text(&s_data.temperature_layer, "Error");
-	}
-}
-
 void select_single_click_handler(ClickRecognizerRef recognizer, Window *window) {
-  MorseInput_setup(main_window_after_morse);
-  window_stack_push(&MorseInputData.window, true);
+	window_stack_push(&SMSMenu_data.window, true);
 }
 
 void click_config_provider(ClickConfig **config, Window *window) {
@@ -68,6 +58,10 @@ void main_window_disappear(struct Window *window) {
 void main_window_unload(struct Window *window) {
 }
 
+void init_other_windows() {
+	MorseInput_init();
+	SMSMenu_init();
+}
 
 static void tool_app_init(AppContextRef c) {
 
@@ -107,7 +101,7 @@ static void tool_app_init(AppContextRef c) {
   };
   window_set_window_handlers(window, handlers);
 
-  MorseInput_init();
+  init_other_windows();
 
   window_stack_push(window, true);
 

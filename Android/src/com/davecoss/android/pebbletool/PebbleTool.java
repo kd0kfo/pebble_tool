@@ -43,9 +43,8 @@ public class PebbleTool extends Activity {
 				new IntentFilter(PEBBLE_TOOL_RECEIVER));
 		showLastWeatherData();
 
-		// Ensure that if the Activity has been started, the service has been started also.
-		Intent wakeUp = Commands.createIntent(this, PebbleService.class, Commands.CommandCode.NOOP);
-		startService(wakeUp);
+		// Updated TextView that contains the SMS recipient
+		updateSMSRecipient();
 	}
 	
 	@Override
@@ -87,15 +86,33 @@ public class PebbleTool extends Activity {
 		if(msg == null)
 			return;
 		msg = msg.trim();
+		sendAlertToWatch(msg);
+	}
+	
+	private void sendAlertToWatch(String msg) {
 		if(msg.length() == 0)
 			return;
-		Intent intent = Commands.createIntent(this, PebbleService.class, PebbleService.Commands.SEND_ALERT_TO_WATCH.ordinal(), msg);
+		Intent intent = Commands.createIntent(this, PebbleService.class, Commands.CommandCode.SEND_ALERT_TO_WATCH, msg);
+		startService(intent);
+	}
+	
+	public void setSMSRecipient(View btn) {
+		TextView tv = (TextView) findViewById(R.id.numSMSRecipient);
+		
+		String number = tv.getText().toString().trim();
+		
+		Intent intent = Commands.createIntent(this, PebbleService.class, Commands.ANDROID_APP_SMS_RECIPIENT, number);
 		startService(intent);
 	}
 	
 	private void showLastWeatherData() {
-	    Intent intent = Commands.createIntent(this, PebbleService.class,Commands.CommandCode.ANDROID_APP_GET_LAST_WEATHER, "");
+	    Intent intent = Commands.createIntent(this, PebbleService.class,Commands.ANDROID_APP_GET_LAST_WEATHER, "");
 	    startService(intent);
+	}
+	
+	private void updateSMSRecipient() {
+		Intent intent = Commands.createIntent(this, PebbleService.class, Commands.ANDROID_APP_SMS_RECIPIENT, "");
+		startService(intent);
 	}
 
 	// handler for received Intents for the "my-event" event 
@@ -103,6 +120,12 @@ public class PebbleTool extends Activity {
 	  @Override
 	  public void onReceive(Context context, Intent intent) {
 		Log.d("PebbleTool.serviceReceiver", "Received message");
+		
+		if(intent.hasExtra("smsrecipient")) {
+			TextView tv = (TextView) findViewById(R.id.txtSMSRecipient);
+			tv.setText(intent.getStringExtra("smsrecipient"));
+		}
+		
 		if(!intent.hasExtra("temperature"))
 			return;
 		double temp = intent.getDoubleExtra("temperature", -42);
